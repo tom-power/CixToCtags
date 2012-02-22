@@ -4,6 +4,6 @@
 
 <DOCKABLES>	
 	<DOCKABLE NAME="cixtoctags">
-		new cixtoctags.CixToCtagsPanel(view, false);
+		new cixtoctags.Panel(view, false);
 	</DOCKABLE>	
 </DOCKABLES>

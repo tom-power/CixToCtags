@@ -1,4 +1,1 @@
-<p>
 CixToCtags allows production of ctags from Komodo Edit code intelligence (.cix) files and registry to the CtagsInterFace database. This provides a simple way to add code-completion features for built in functions in a variety of languages.
-</p>
-

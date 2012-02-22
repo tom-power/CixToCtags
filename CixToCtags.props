@@ -1,6 +1,5 @@
 plugin.cixtoctags.main.CixToCtagsPlugin.activate=defer
 
-
 # general plugin information
 plugin.cixtoctags.main.CixToCtagsPlugin.name=CixToCtags
 plugin.cixtoctags.main.CixToCtagsPlugin.author=Tom Power
@@ -20,5 +19,4 @@ plugin.cixtoctags.main.CixToCtagsPlugin.menu=\
 	cixtoctags-add-remove \	
 	
 # action labels for actions supplied by actions.xml 
-cixtoctags-add-remove.label=Add/remove .cix
-
+cixtoctags-add-remove.label=Add/remove cix filess
