@@ -1,299 +1,119 @@
 package cixtoctags;
 
-import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.Comparator;
+import java.awt.BorderLayout;
 import java.util.Vector;
-
-import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
+import java.io.File;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
-import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
-import javax.swing.tree.TreePath;
-
-import org.gjt.sp.jedit.GUIUtilities;
-import org.gjt.sp.jedit.gui.RolloverButton;
+        
 import org.gjt.sp.jedit.View;
-import org.gjt.sp.util.EnhancedTreeCellRenderer;
-import org.gjt.sp.util.ThreadUtilities;
+import org.gjt.sp.jedit.GUIUtilities;
+import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.browser.VFSBrowser;
+import org.gjt.sp.jedit.browser.VFSFileChooserDialog;
+import org.gjt.sp.jedit.gui.RolloverButton;
 
 import ctagsinterface.main.CtagsInterfacePlugin;
-import ctagsinterface.main.Tag;
+import ctagsinterface.main.VFSHelper;
 
 @SuppressWarnings("serial")
-public class CixToCtagsPanel extends JPanel
+public class CixToCtags extends JPanel
 {
-	private View view;
-	private JTree tree;
-	private DefaultTreeModel model;
-	private DefaultMutableTreeNode root;
-	private IMapper mapper;
-	private ISorter sorter;
-	private JRadioButton kind, namespace;
-	private Runnable repaintTree;
-	private Runnable updateTree;
-	private boolean repaintTreeMarked;
-	private JCheckBox caseSensitiveSorting;
-
-	public CixToCtagsPanel(View view)
+    private View view;
+	JList cixList;
+	DefaultListModel cixModel;    
+	
+	public CixToCtags(View thisView)
 	{
-		this.view = view;
+        this.view = thisView;
 		setLayout(new BorderLayout());
-		root = new DefaultMutableTreeNode();
-		model = new DefaultTreeModel(root);
-		tree = new JTree(model);
-		tree.setRootVisible(false);
-		tree.setShowsRootHandles(true);
-		tree.setCellRenderer(new TagTreeCellRenderer());
-		tree.addMouseListener(new MouseAdapter()
-		{
-
-			@Override
-			public void mouseClicked(MouseEvent e)
-			{
-				TreePath tp = tree.getPathForLocation(e.getX(), e.getY());
-				if (tp == null)
-					return;
-				DefaultMutableTreeNode node = (DefaultMutableTreeNode)
-					tp.getLastPathComponent();
-				if (node.getUserObject() instanceof Tag)
-				{
-					Tag t = (Tag) node.getUserObject();
-					CtagsInterfacePlugin.jumpToTag(CixToCtagsPanel.this.view, t);
-				}
-				super.mouseClicked(e);
-			}
-		});
-		add(new JScrollPane(tree), BorderLayout.CENTER);
-		JPanel bottom = new JPanel();
-		add(bottom, BorderLayout.SOUTH);
-		JPanel mapPanel = new JPanel();
-		//bottom.add(mapPanel);
-		mapPanel.add(new JLabel("Group by:"));
-		kind = new JRadioButton("Kind");
-		mapPanel.add(kind);
-		namespace = new JRadioButton("Namespace");
-		mapPanel.add(namespace);
-		ButtonGroup bg = new ButtonGroup();
-		bg.add(kind);
-		bg.add(namespace);
-		kind.setSelected(true);
-		JPanel sortPanel = new JPanel();
-		//bottom.add(sortPanel);
-                
-                JPanel buttons = new JPanel();
+		cixModel = new DefaultListModel();
+		Vector<String> trees = getCix();
+		for (int i = 0; i < trees.size(); i++)
+			cixModel.addElement(trees.get(i));
+		cixList = new JList(cixModel);
+		JScrollPane scroller = new JScrollPane(cixList);
+                add(scroller, BorderLayout.CENTER);
+        JPanel bottom = new JPanel();
+		add(bottom, BorderLayout.SOUTH);		                
+		JPanel buttons = new JPanel();
 		JButton add = new RolloverButton(GUIUtilities.loadIcon("Plus.png"));
 		buttons.add(add);
 		JButton remove = new RolloverButton(GUIUtilities.loadIcon("Minus.png"));
 		buttons.add(remove);
 		JButton tag = new JButton("Tag");
-		buttons.add(tag);
+		buttons.add(tag);                
 		bottom.add(buttons);
                 
+		add.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+				VFSFileChooserDialog chooser = new VFSFileChooserDialog(
+					GUIUtilities.getParentDialog(view),
+					jEdit.getActiveView(), System.getProperty("user.home"),
+					VFSBrowser.OPEN_DIALOG, false, false);
+				chooser.setTitle("Select .cix file");
+				chooser.setVisible(true);
+				if (chooser.getSelectedFiles() == null)
+					return;
+				String cixAdd = chooser.getSelectedFiles()[0];
+                String cixFileName = VFSHelper.getFileName(cixAdd);                
+                // only copy if not there already
+                if (cixModel.toString().lastIndexOf(cixFileName)< 0) {
+                    VFSHelper.copy(cixAdd, getCixDirectory()+"/"+cixFileName);                
+                    cixModel.addElement(cixFileName);
+                }
+			}
+		});
                 
+		remove.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+                int i = cixList.getSelectedIndex();
+				if (i < 0)
+                    return;
+                String cixFileName = cixList.getSelectedValue().toString();                                
+                try { 
+                    new File(getCixDirectory()+"/"+cixFileName).delete();
+                } catch (Exception e) {
+                }
+                cixModel.removeElementAt(i);                                    
+			}
+		});
                 
-		caseSensitiveSorting = new JCheckBox("Case-sensitive sorting");
-		sortPanel.add(caseSensitiveSorting);
-		JButton update = new JButton("Refresh");
-		//bottom.add(update);
-		ActionListener listener = new ActionListener()
-		{
-			public void actionPerformed(ActionEvent e)
-			{
-				populate();
+		tag.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+                CixParser cixParser = new CixParser();
+                String pathToTagFile = cixParser.parseCixList(getCix());
+                if (pathToTagFile == null) 
+                    return;                
+                CtagsInterfacePlugin.addTagFile(view, pathToTagFile);
 			}
-		};
-		kind.addActionListener(listener);
-		namespace.addActionListener(listener);
-		caseSensitiveSorting.addActionListener(listener);
-		update.addActionListener(listener);
-		repaintTree = new Runnable()
-		{
-			public void run()
-			{
-				synchronized(this)
-				{
-					repaintTreeMarked = false;
-					model.nodeStructureChanged(root);
-				}
-			}
-		};
-		updateTree = new Runnable()
-		{
-			public void run()
-			{
-				mapper = kind.isSelected() ? new KindMapper() :
-					new NamespaceMapper();
-				sorter = new NameSorter(caseSensitiveSorting.isSelected());
-				root.removeAllChildren();
-				Vector<Tag> tags = CtagsInterfacePlugin.runScopedQuery(
-					CixToCtagsPanel.this.view, "doctype:tag", 1000000);
-				Vector<Object> path = new Vector<Object>();
-				for (Tag t: tags)
-					addToTree(t, path);
-			}
-		};
+		});          
 	}
-	public void populate()
+    
+  	public Vector<String> getCix()
 	{
-		repaintTreeMarked = false;
-		ThreadUtilities.runInBackground(updateTree);
+		Vector<String> cix = new Vector<String>();
+        File dir = new File(getCixDirectory());
+        String[] children = dir.list();
+        if (children != null) {
+            for (int i=0; i<children.length; i++) 
+                cix.add(children[i]);           
+        }                
+		return cix;
+	}	
+        
+    private String getCixToCtagsDirectory() 
+    {
+		return jEdit.getSettingsDirectory() + "/CixToCtags/";
 	}
-	public void addToTree(Tag t, Vector<Object> path)
-	{
-		if (t.getName().equals("GetPid"))
-			path.clear();
-		mapper.getPath(t, path);
-		DefaultMutableTreeNode current = root;
-		synchronized(this)
-		{
-			for (Object o: path)
-				current = addChild(current, o);
-			if (! repaintTreeMarked)
-			{
-				repaintTreeMarked = true;
-				ThreadUtilities.runInDispatchThread(repaintTree);
-			}
-		}
-	}
-	private DefaultMutableTreeNode addChild(
-		DefaultMutableTreeNode parent, Object childData)
-	{
-		int low = 0, high = parent.getChildCount() - 1, index = -1;
-		while (high >= low)
-		{
-			index = (low + high) / 2;
-			DefaultMutableTreeNode child =
-				(DefaultMutableTreeNode) parent.getChildAt(index);
-			Object data = child.getUserObject();
-			int c = sorter.compare(data, childData);
-			if (c < 0)
-				low = index + 1;
-			else if (c > 0)
-				high = index - 1;
-			else if (data instanceof String)
-			{
-				if (childData instanceof Tag)
-					child.setUserObject(childData);
-				return child;
-			}
-			else if (childData instanceof Tag)
-				break;
-			else
-				return child;
-		}
-		if (low > index)
-			index++;
-		DefaultMutableTreeNode child = new DefaultMutableTreeNode(childData);
-		parent.insert(child, index);
-		return child;
-	}
-
-	private interface IMapper
-	{
-		// Set the given 'path' vector to the path of tag 't'.
-		void getPath(Tag t, Vector<Object> path);
-	}
-
-	private interface ISorter extends Comparator<Object>
-	{
-	}
-
-	private static class NamespaceMapper implements IMapper
-	{
-		private static final String GLOBAL_SCOPE = "<< Global (no namespace) >>";
-		private static final String [] Keywords = {
-			"namespace", "class", "union", "struct", "enum"
-		};
-		private String separator = "::|\\.";
-		public void getPath(Tag tag, Vector<Object> path)
-		{
-			path.clear();
-			for (String keyword: Keywords)
-			{
-				String ns = tag.getExtension(keyword);
-				if (ns != null)
-				{
-					String [] parts = ns.split(separator);
-					for (String part: parts)
-						path.add(part);
-					break;
-				}
-			}
-			if (path.isEmpty())
-				path.add(GLOBAL_SCOPE);
-			path.add(tag);
-		}
-	}
-	private static class KindMapper implements IMapper
-	{
-		public void getPath(Tag t, Vector<Object> path)
-		{
-			path.clear();
-			path.add(t.getKind());
-			path.add(t);
-		}
-	}
-
-	private static class NameSorter implements ISorter
-	{
-		boolean caseSensitive;
-		public NameSorter(boolean caseSensitive)
-		{
-			this.caseSensitive = caseSensitive;
-		}
-		public int compare(Object o1, Object o2)
-		{
-			String s1 = (o1 instanceof Tag) ? ((Tag)o1).getName() : o1.toString();
-			String s2 = (o2 instanceof Tag) ? ((Tag)o2).getName() : o2.toString();
-			if (! caseSensitive)
-			{
-				s1 = s1.toLowerCase();
-				s2 = s2.toLowerCase();
-			}
-			return s1.compareTo(s2);
-		}
-	}
-
-	private class TagTreeCellRenderer extends EnhancedTreeCellRenderer
-	{
-		
-		@Override
-	    protected void configureTreeCellRendererComponent(JTree tree,
-	    	Object value, boolean sel, boolean expanded, boolean leaf,
-	    	int row, boolean hasFocus)
-		{
-			setOpenIcon(null);
-			setClosedIcon(null);
-			if (value instanceof DefaultMutableTreeNode)
-			{
-				DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
-				Object obj = node.getUserObject();
-				if (obj instanceof Tag)
-				{
-					Tag t = (Tag) obj;
-					setText(t.getName());
-					ImageIcon icon = t.getIcon();
-					setIcon(icon);
-				}
-			}
-		}
-
-		@Override
-		protected TreeCellRenderer newInstance()
-		{
-			return new TagTreeCellRenderer();
-		}
-	}
+    
+    private String getCixDirectory() 
+    {
+		return getCixToCtagsDirectory() + "cix/";
+	}    
 }

@@ -1,22 +1,30 @@
-plugin.cixtoctags.main.CixToCtagsPlugin.activate=defer
+plugin.cixtoctags.CixToCtagsPlugin.activate=defer
 
 # general plugin information
-plugin.cixtoctags.main.CixToCtagsPlugin.name=CixToCtags
-plugin.cixtoctags.main.CixToCtagsPlugin.author=Tom Power
-plugin.cixtoctags.main.CixToCtagsPlugin.version=0.1
-plugin.cixtoctags.main.CixToCtagsPlugin.description=\
+plugin.cixtoctags.CixToCtagsPlugin.name=CixToCtags
+plugin.cixtoctags.CixToCtagsPlugin.author=Tom Power
+plugin.cixtoctags.CixToCtagsPlugin.version=0.1
+plugin.cixtoctags.CixToCtagsPlugin.description=\
 	Allows addition and removal of .cix files CtagsInterface database.
 
-plugin.cixtoctags.main.CixToCtagsPlugin.depend.0=jdk 1.5
-plugin.cixtoctags.main.CixToCtagsPlugin.depend.1=jedit 04.05.01.00
-#plugin.cixtoctags.main.CixToCtagsPlugin.depend.2=plugin plugin.ctagsinterface.CtagsInterfacePlugin 2.1
+plugin.cixtoctags.CixToCtagsPlugin.depend.0=jdk 1.5
+plugin.cixtoctags.CixToCtagsPlugin.depend.1=jedit 04.05.01.00
+#plugin.cixtoctags.CixToCtagsPlugin.depend.2=plugin plugin.ctagsinterface.CtagsInterfacePlugin 2.1
 
-plugin.cixtoctags.main.CixToCtagsPlugin.docs=index.html
+plugin.cixtoctags.CixToCtagsPlugin.docs=index.html
 
 # plugin menu
-plugin.cixtoctags.main.CixToCtagsPlugin.menu.label=Cix To Ctags
-plugin.cixtoctags.main.CixToCtagsPlugin.menu=\
-	cixtoctags-add-remove \	
+plugin.cixtoctags.CixToCtagsPlugin.menu.label=Cix To Ctags
+plugin.cixtoctags.CixToCtagsPlugin.menu=\
+	cixtoctags \	
 	
-# action labels for actions supplied by actions.xml 
-cixtoctags-add-remove.label=Add/remove cix filess
+# action labels for actions supplied by actions.xml
+cixtoctags-add-remove.title=Add/remove cix files
+cixtoctags-add-remove.label=Add/remove cix files
+
+# dockables
+cixtoctags.title=CixToCtags
+cixtoctags.label=CixToCtags
+
+# messages
+messages.CixToCtags.panelTitle=Source archives:

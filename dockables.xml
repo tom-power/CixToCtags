@@ -3,7 +3,7 @@
 <!DOCTYPE DOCKABLES SYSTEM "dockables.dtd">
 
 <DOCKABLES>	
-	<DOCKABLE NAME="cixtoctags">
-		new cixtoctags.Panel(view, false);
+	<DOCKABLE NAME="cixtoctags" MOVEABLE="true">
+		new cixtoctags.CixToCtags(view);
 	</DOCKABLE>	
 </DOCKABLES>
