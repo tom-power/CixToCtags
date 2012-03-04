@@ -31,7 +31,7 @@ public class CixToCtags extends JPanel
 	public CixToCtags(View thisView)
 	{
         this.view = thisView;
-		setLayout(new BorderLayout());
+        setLayout(new BorderLayout());
 		cixModel = new DefaultListModel();
 		Vector<String> trees = getCix();
 		for (int i = 0; i < trees.size(); i++)
