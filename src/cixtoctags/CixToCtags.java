@@ -90,7 +90,7 @@ public class CixToCtags extends JPanel
                 String pathToTagFile = cixParser.parseCixList(getCix());
                 if (pathToTagFile == null) 
                     return;                
-                CtagsInterfacePlugin.addTagFile(view, pathToTagFile);
+                CtagsInterfacePlugin.addTagFile(view, pathToTagFile);// TODO: not deleting from db?
 			}
 		});          
 	}
@@ -109,11 +109,15 @@ public class CixToCtags extends JPanel
         
     private String getCixToCtagsDirectory() 
     {
-		return jEdit.getSettingsDirectory() + "/CixToCtags/";
+		String settingsDir = "~/.jedit";
+        if (jEdit.getSettingsDirectory()!=null) 
+            settingsDir = jEdit.getSettingsDirectory();        
+        return settingsDir + "/CixToCtags/";
 	}
     
     private String getCixDirectory() 
     {
 		return getCixToCtagsDirectory() + "cix/";
 	}    
+    
 }
