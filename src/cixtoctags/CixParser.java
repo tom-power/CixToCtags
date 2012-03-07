@@ -11,32 +11,36 @@ import org.gjt.sp.jedit.jEdit;
 import java.io.*;
 import java.util.Vector;
 
+import cixtoctags.CixToCtagsPlugin;
+
 
 public class CixParser {
     private String sigFilePath;
+    private String tagFilePath;
+    private CixToCtagsPlugin cp;
 
-    public String parseCixList(Vector<String> cixList) {
-        String tags = "";        
+    public CixParser() {
+        this.cp = new CixToCtagsPlugin();
+    }
+
+    public Vector<String> parseCixList(Vector<String> cixList) {
+        Vector<String> tags = new Vector<String>();
         // cixfiles to string
-        if (cixList.size() > 0) {
-            for (int i = 0; i < cixList.size(); i++) {
-                tags += cixFileToTagsSigs(getPathToCix("cix/")+cixList.get(i));// one call per cix file                
-            }
+        for (String cixFile:cixList) {
+            tagFilePath = cp.getTagPath(cixFile);
+            File tagFile = new File(tagFilePath);
+
+            sigFilePath = cp.getSigPath(cixFile);
+            File sigFile = new File(sigFilePath);
+
+            if (!tagFile.exists() || !sigFile.exists())
+                tags.add(cixFileToTagsSigs(cp.getCixPath(cixFile), tagFile, sigFile));
         }
-        // write to tag file
-        File cixFile = new File(getPathToCix("tags"));
-        cixFile.delete();
-        try {
-            writeStringToFile(cixFile, tags);
-        } catch (IOException io) {
-            System.out.println("Error: "+io);
-        }
-        // path to tag file for ctagsinterfaceplugin
-        tags = getPathToCix("tags");
+        // new tag files for ctagsinterfaceplugin to add
         return tags;
     }
 
-    private String cixFileToTagsSigs(String cixFile) {
+    private String cixFileToTagsSigs(String cixFile, File tagFile, File sigFile) {
         String[] fileTagsSigs = {"", ""};
         try {
             File cixXml = new File(cixFile);
@@ -47,53 +51,56 @@ public class CixParser {
             NodeList nList = cixDoc.getElementsByTagName("scope");
             Node nRoot = nList.item(0);
             Element elRoot = (Element) nRoot;
-            String lang = elRoot.getAttribute("lang");            
-            // make tag and sig, lines synced
+            String lang = elRoot.getAttribute("lang");
+
+            // construct tag and sig from each entry
+            int k = 1;
             for (int i = 0; i < nList.getLength(); i++) {
                 Node nNode = nList.item(i);
                 if (nNode.getNodeType() == Node.ELEMENT_NODE) {
                     Element elChild = (Element) nNode;
-                    String ilk = elChild.getAttribute("ilk");                    
-                    if (ilk.matches("function")) {                                                                        
-                        String[] temp = cixEntryToTagSigs(elChild, i*2+(i+1), lang);
+                    String ilk = elChild.getAttribute("ilk");
+                    if (ilk.matches("function")) {
+                        int line = k*2+(k-2);k++;
+                        String[] temp = cixEntryToTagSigs(elChild, line, lang);
                         fileTagsSigs[0] += temp[0];
-                        fileTagsSigs[1] += temp[1];                        
-                    }                    
+                        fileTagsSigs[1] += temp[1];
+                    }
                 }
-                sigFilePath = getPathToCix("sigs/"+lang+".sig");
-                File sigFile = new File(sigFilePath);
-                sigFile.delete();
-                try {
-                    writeStringToFile(sigFile, fileTagsSigs[1]);
-                } catch (IOException io) {
-                    System.out.println("Error: "+io);
-                }
-            }            
+            }
+            // write files
+            try {
+                writeStringToFile(tagFile, fileTagsSigs[0]);
+                writeStringToFile(sigFile, fileTagsSigs[1]);
+            } catch (IOException io) {
+                System.out.println("Error: "+io);
+            }
+            return tagFilePath;
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return fileTagsSigs[0];
+        return "";
     }
 
     private String[] cixEntryToTagSigs(Element el, Integer line, String lang) {
-        String doc = el.getAttribute("doc").replace("\\n", "");
+        String doc = el.getAttribute("doc").replace(System.getProperty("line.separator"), "");
         String name = el.getAttribute("name");
         String kind = el.getAttribute("ilk");
         String returns = el.getAttribute("returns");
-        if (returns.isEmpty()) 
-            returns="void";                
+        if (returns.isEmpty())
+            returns="void";
         String sig = returns+" "+kind+" "+name;
         String args = "", comma = "";
         NodeList childNodes = el.getChildNodes();
-        if( childNodes != null ) {            
+        if( childNodes != null ) {
             for( int i = 0; i < childNodes.getLength(); i++ ) {
-                Node childNode = childNodes.item(i);                 
+                Node childNode = childNodes.item(i);
                 if(childNode.getNodeName().matches("variable")) {
                     Element elChild = (Element) childNode;
-                    args += comma+elChild.getAttribute("citdl")+" "+elChild.getAttribute("name");                
+                    args += comma+elChild.getAttribute("citdl")+" "+elChild.getAttribute("name");
                     comma = ", ";
                 }
-            }            
+            }
             args = args.trim();
         }
         sig += "("+args+"){}";
@@ -103,17 +110,13 @@ public class CixParser {
                     + "kind:"+kind+"\t"
                     + "line:"+line+"\t"
                     + "language:"+lang+"\t"
-                    + "doctype:tag\n";
-        sig = "// "+lang+": "+doc+"\n"+sig+"\n\n";
+                    //+ "doctype:origin\ttype:Misc\tid:temp"
+                    + "doctype:tag"// doctype:origin +type:Misc +id:temp
+                    + "\n";
+
+        sig = "// "+doc+"\n"+sig+"\n\n";
         String[] entryTagSigs = {tag,sig};
         return entryTagSigs;
-    }
-
-    private String getPathToCix(String file) {
-        String settingsDir = "~/.jedit";
-        if (jEdit.getSettingsDirectory()!=null) 
-            settingsDir = jEdit.getSettingsDirectory();        
-        return settingsDir + "/CixToCtags/" + file;
     }
 
     private void writeStringToFile(File file, String str) throws IOException {
@@ -122,21 +125,21 @@ public class CixParser {
         out.write(str.replace("\\", ""));
         out.close();
     }
-   
-//    public static void main(String[] args)  {
+
+    public static void main(String[] args)  {
 //        CixParser cp = new CixParser();
 //        System.out.println(cp.getPathToCix("tags"));
-//        String tags = cp.cixFileToTagSigs("/home/tp/.jedit/CixToCtags/cix/text.cix")[0];
-//        System.out.println(tags); 
-//        //System.out.println(cp.cixFileToTagSigs("/home/tp/.jedit/CixToCtags/cix/test1.cix")[1]);         
-//       
-//        File cixFile = new File("/home/tp/.jedit/CixToCtags/tags");
-//        cixFile.delete();
-//        try {
-//            cp.writeStringToFile(cixFile, tags);
-//        } catch (IOException io) {
-//            System.out.println(io);
-//        }        
- //   }    
-    
+//        String tags = cp.cixFileToTagsSigs("/home/tp/.jedit/CixToCtags/cix/node.js.cix");
+//        System.out.println(tags);
+//        //System.out.println(cp.cixFileToTagSigs("/home/tp/.jedit/CixToCtags/cix/test1.cix")[1]);
+//
+////        File cixFile = new File("/home/tp/.jedit/CixToCtags/tags");
+////        cixFile.delete();
+////        try {
+////            cp.writeStringToFile(cixFile, tags);
+////        } catch (IOException io) {
+////            System.out.println(io);
+////        }
+    }
+
 }

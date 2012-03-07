@@ -10,7 +10,7 @@ import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-        
+
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
@@ -20,36 +20,43 @@ import org.gjt.sp.jedit.gui.RolloverButton;
 
 import ctagsinterface.main.CtagsInterfacePlugin;
 import ctagsinterface.main.VFSHelper;
+import cixtoctags.CixToCtagsPlugin;
+
+import ctagsinterface.index.TagIndex.OriginType;
+import org.gjt.sp.jedit.Macros;
+
 
 @SuppressWarnings("serial")
 public class CixToCtags extends JPanel
 {
     private View view;
 	JList cixList;
-	DefaultListModel cixModel;    
-	
+	DefaultListModel cixModel;
+    private CixToCtagsPlugin ctcp;
+
 	public CixToCtags(View thisView)
 	{
         this.view = thisView;
+        this.ctcp = new CixToCtagsPlugin();
         setLayout(new BorderLayout());
 		cixModel = new DefaultListModel();
-		Vector<String> trees = getCix();
+		Vector<String> trees = ctcp.getCixNames();
 		for (int i = 0; i < trees.size(); i++)
 			cixModel.addElement(trees.get(i));
 		cixList = new JList(cixModel);
 		JScrollPane scroller = new JScrollPane(cixList);
                 add(scroller, BorderLayout.CENTER);
         JPanel bottom = new JPanel();
-		add(bottom, BorderLayout.SOUTH);		                
+		add(bottom, BorderLayout.SOUTH);
 		JPanel buttons = new JPanel();
 		JButton add = new RolloverButton(GUIUtilities.loadIcon("Plus.png"));
 		buttons.add(add);
 		JButton remove = new RolloverButton(GUIUtilities.loadIcon("Minus.png"));
 		buttons.add(remove);
 		JButton tag = new JButton("Tag");
-		buttons.add(tag);                
+		buttons.add(tag);
 		bottom.add(buttons);
-                
+
 		add.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
 				VFSFileChooserDialog chooser = new VFSFileChooserDialog(
@@ -61,63 +68,51 @@ public class CixToCtags extends JPanel
 				if (chooser.getSelectedFiles() == null)
 					return;
 				String cixAdd = chooser.getSelectedFiles()[0];
-                String cixFileName = VFSHelper.getFileName(cixAdd);                
-                // only copy if not there already
+                String cixFileName = VFSHelper.getFileName(cixAdd);
                 if (cixModel.toString().lastIndexOf(cixFileName)< 0) {
-                    VFSHelper.copy(cixAdd, getCixDirectory()+"/"+cixFileName);                
+                    VFSHelper.copy(cixAdd, ctcp.getCixPath(cixFileName));
                     cixModel.addElement(cixFileName);
                 }
 			}
 		});
-                
+
 		remove.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
                 int i = cixList.getSelectedIndex();
 				if (i < 0)
                     return;
-                String cixFileName = cixList.getSelectedValue().toString();                                
-                try { 
-                    new File(getCixDirectory()+"/"+cixFileName).delete();
+                try {
+                    String cixFileName = cixList.getSelectedValue().toString();
+                    new File(ctcp.getCixPath(cixFileName)).delete();
+                    new File(ctcp.getSigPath(cixFileName)).delete();
+                    new File(ctcp.getTagPath(cixFileName)).delete();
+                    //CtagsInterfacePlugin.deleteTagsFromSourceFile(ctcp.getSigPath(cixFileName));//TODO: this doesn't remove from database
+                    cixModel.removeElementAt(i);
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                cixModel.removeElementAt(i);                                    
 			}
 		});
-                
+
 		tag.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
                 CixParser cixParser = new CixParser();
-                String pathToTagFile = cixParser.parseCixList(getCix());
-                if (pathToTagFile == null) 
-                    return;                
-                CtagsInterfacePlugin.addTagFile(view, pathToTagFile);// TODO: not deleting from db?
+
+//              Vector<String> tagFiles = cixParser.parseCixList(ctcp.getCixNames());
+//              for (String tagFile:tagFiles) {
+//                  CtagsInterfacePlugin.addTagFile(view, tagFile);
+//              }
+
+                cixParser.parseCixList(ctcp.getCixNames());
+                Vector<String> tagFiles = ctcp.getTagPaths();
+                if (tagFiles.isEmpty()) {
+                    CtagsInterfacePlugin.addTagFile(view, ctcp.getDeletePath());
+                }
+                for (String tagFile:tagFiles) {
+                    CtagsInterfacePlugin.addTagFile(view, tagFile);
+                }
 			}
-		});          
+		});
 	}
-    
-  	public Vector<String> getCix()
-	{
-		Vector<String> cix = new Vector<String>();
-        File dir = new File(getCixDirectory());
-        String[] children = dir.list();
-        if (children != null) {
-            for (int i=0; i<children.length; i++) 
-                cix.add(children[i]);           
-        }                
-		return cix;
-	}	
-        
-    private String getCixToCtagsDirectory() 
-    {
-		String settingsDir = "~/.jedit";
-        if (jEdit.getSettingsDirectory()!=null) 
-            settingsDir = jEdit.getSettingsDirectory();        
-        return settingsDir + "/CixToCtags/";
-	}
-    
-    private String getCixDirectory() 
-    {
-		return getCixToCtagsDirectory() + "cix/";
-	}    
-    
+
 }
