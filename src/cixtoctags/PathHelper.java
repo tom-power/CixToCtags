@@ -82,11 +82,8 @@ public class PathHelper
         File dir = new File(getDirectory(fileType));
         String[] children = dir.list();
         if (children != null) {
-            for (int i = 0; i < children.length; i++) {
-                if (!children[i].matches("delete")) {
-                    files.add(children[i]);
-                }
-            }
+            for (int i = 0; i < children.length; i++)
+                files.add(children[i]);
         }
         return files;
     }
