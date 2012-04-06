@@ -49,9 +49,6 @@ public class CixToCtags extends JPanel
         top.setPreferredSize(new Dimension(400, 40));
         add(top, BorderLayout.NORTH);
         top.setLayout(new BorderLayout(10, 5));
-//        Vector<String> tagList = ph.getTagPaths();
-        //JLabel status = new JLabel("Status: idle");
-        //top.add(status, BorderLayout.CENTER);
         JProgressBar bar = new JProgressBar();
         this.progress = new Progress(bar);
         this.progress.setDefault();
@@ -59,7 +56,7 @@ public class CixToCtags extends JPanel
         cixModel = new DefaultListModel();
         Vector<String> cix = ph.getCixNames();
         for (int i = 0; i < cix.size(); i++)
-        cixModel.addElement(cix.get(i));
+            cixModel.addElement(cix.get(i));
         cixList = new JList(cixModel);
         JScrollPane scroller = new JScrollPane(cixList);
         add(scroller, BorderLayout.CENTER);
@@ -106,10 +103,10 @@ public class CixToCtags extends JPanel
 
                 try {
                     String cixFileName = cixList.getSelectedValue().toString();
+                    CtagsInterfacePlugin.deleteTagsFromTagFile(view, ph.getTagPath(cixFileName));
                     new File(ph.getCixPath(cixFileName)).delete();
                     new File(ph.getSigPath(cixFileName)).delete();
                     new File(ph.getTagPath(cixFileName)).delete();
-                    CtagsInterfacePlugin.deleteTagsFromSourceFile(ph.getSigPath(cixFileName));
                     cixModel.removeElementAt(i);
                 } catch (Exception e) {
                     e.printStackTrace();
