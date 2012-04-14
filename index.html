@@ -1,0 +1,36 @@
+<html>
+<head>
+   <title>CixToCtags Plugin</title>
+</head>
+
+<body>
+	<h1>CixToCtags plugin documentation</h1>
+	Tom Power, April 2012
+	<h2>Description</h2>
+	CixToCtags allows production of tag files from OpenKomodo code intelligence (.cix) files and registry to the CtagsInterFace index. This provides a simple way to get code-completion features for the built in functions of languages supported by OpenKomodo.
+
+	<h2>Usage</h2>
+	.cix files are packaged with Komodo edit downloads or can be downloaded from their site, they tend to focus on languages for web development:
+
+	<ul>
+	<li>
+	<a href="http://grok.openkomodo.com/source/xref/openkomodo/trunk/src/codeintel/lib/codeintel2/stdlibs/">Standard libraries</a>
+	</li>
+	<li>
+	<a href="http://grok.openkomodo.com/source/xref/openkomodo/trunk/src/codeintel/lib/codeintel2/catalogs/">Catalogs</a>
+	</li>
+	</ul>
+
+	Once downloaded they can be added to the CtagsInteface database using the CixToCtags dockable.
+
+	<h2>Options</h2>
+	There are no options available in CixToCtags, but some in CtagsInterface and Project Viewer are helpful when using the plugin:
+<p><strong>CtagsInterface</strong></p>
+
+	<i>Match language with buffer:</i> The .cix files are language specific and, as you rarely want code completion suggestions for languages other than the one you are currently using, this option can help with getting sensible suggestions.<br/> 
+	Note that the language to match on is based on the extension of the file you are currently editing, and it only works where tags have language information stored (i.e tags from languages that are ctags compatible and were tagged using the ctags --fields=+l option). <br/>
+	<i>Limiting tag search to project and depedencies:</i> As tag files and directories of tag files can be added as project dependencies, this option can be used to limit suggestions on a project by project basis (see below).
+<p><strong>Project Viewer</strong></p>
+	All tag files produced by CixToCtags are stored in the jEdit settings directory for your system under "CixToCtags" -> "tags". Individual tags within this directory, or the directory as a whole, can then be added as dependencies for a given project via it's context menu, and used with CtagsInterface options to limit code completion suggestions appropriately.
+</body>
+</html>

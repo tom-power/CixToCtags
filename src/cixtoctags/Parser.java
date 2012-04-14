@@ -18,12 +18,10 @@ public class Parser
     private String sigFilePath;
     private String tagFilePath;
     private PathHelper ph;
-    private Progress progress;
 
-    public Parser(Progress progress)
+    public Parser()
     {
         this.ph = new PathHelper();
-        this.progress = progress;
     }
 
     public Vector<String> parseCixList(Vector<String> cixList)
@@ -31,12 +29,12 @@ public class Parser
         Vector<String> tagPaths = new Vector<String>();
         // cixfiles to tags/sigs
         for (String cixFile : cixList) {
-            tagFilePath = ph.getTagPath(cixFile);
+            tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFile));
             File tagFile = new File(tagFilePath);
-            sigFilePath = ph.getSigPath(cixFile);
+            sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFile));
             File sigFile = new File(sigFilePath);
             if (!tagFile.exists() || !sigFile.exists()) {
-                tagPaths.add(cixFileToTagsSigs(ph.getCixPath(cixFile), tagFile, sigFile));
+                tagPaths.add(cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile));
             }
         }
         // tag file paths for ctagsinterfaceplugin to add
@@ -45,12 +43,12 @@ public class Parser
 
     public String parseCixFile(String cixFile)
     {
-            tagFilePath = ph.getTagPath(cixFile);
+            tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFile));
             File tagFile = new File(tagFilePath);
-            sigFilePath = ph.getSigPath(cixFile);
+            sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFile));
             File sigFile = new File(sigFilePath);
             if (!tagFile.exists() || !sigFile.exists())
-                return cixFileToTagsSigs(ph.getCixPath(cixFile), tagFile, sigFile);
+                return cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile);
             else
                 return "";
     }
@@ -135,13 +133,19 @@ public class Parser
                 + "doc:" + doc + "\t"
                 + "doctype:tag"
                 + "\n";
-        String sig = "// " + doc + "\n" + returns + " " + kind + " " + name + " " + signature + "\n\n";
+        String sig = "// " + doc + "\n"
+                        + returns + " "
+                        + kind + " "
+                        + name + " "
+                        + signature + "\n\n";
         String[] entryTagSigs = {tag, sig};
         return entryTagSigs;
     }
 
     private void writeStringToFile(File file, String str) throws IOException
     {
+        new File(file.getParent()).mkdir();
+        file.createNewFile();
         FileWriter fstream = new FileWriter(file, true);
         BufferedWriter out = new BufferedWriter(fstream);
         out.write(str.replace("\\", ""));

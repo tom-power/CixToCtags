@@ -2,7 +2,8 @@ package cixtoctags;
 
 import org.gjt.sp.jedit.jEdit;
 import java.util.Vector;
-import java.io.File;
+import java.io.*;
+import ctagsinterface.main.VFSHelper;
 
 /**
  *
@@ -11,24 +12,79 @@ import java.io.File;
 public class PathHelper
 {
 
-    public String getCixPath(String cixFileName)
+    public void deleteFiles(String fileName)
     {
-        return getCixDirectory() + cixFileName;
+        String[] types = {"cix", "sig", "tag"};
+        for (String type : types) {
+            new File(getPath(fileName, type)).delete();
+        }
     }
 
-    public String getSigPath(String cixFileName)
+    public String getFileName(String path)
     {
-        return getSigDirectory() + cixFileName.replace("cix", "sig");
+        return VFSHelper.getFileName(path);
     }
 
-    public String getTagPath(String cixFileName)
+    public String getFileNamePre(String path)
     {
-        return getTagDirectory() + cixFileName.replace("cix", "tag");
+        String fileName = getFileName(path);
+        String[] fileSplit = fileName.split("\\.");
+        String fileNamePre = "";
+        if (fileSplit.length>=1) {
+            fileNamePre = fileSplit[0];
+            for (int i = 1; i < fileSplit.length-1; i++) {
+                fileNamePre += "." + fileSplit[i];
+            }
+        }
+        return fileNamePre;
     }
 
-    public String getDeletePath()
+    public String getFileNameExt(String path)
     {
-        return getTagDirectory() + "delete";
+        String fileName = getFileName(path);
+        String[] fileSplit = fileName.split("\\.");
+        if(fileSplit.length>=1)
+            return fileSplit[fileSplit.length-1];
+        return "";
+    }
+
+
+    public void add(String filePath)
+    {
+        File file = new File(filePath);
+        add(file);
+    }
+
+    public void add(File file)
+    {
+        try {
+            File parentDir = new File(file.getParent());
+            if (!parentDir.exists())
+                parentDir.mkdirs();
+            file.createNewFile();
+        } catch (IOException | SecurityException ex) {
+            System.out.println("Error while Creating File in Java" + ex);
+        }
+    }
+
+    public void copy(String file, String path){
+        add(path);
+        VFSHelper.copy(file, path);
+    }
+
+    public String getCixPath(String fileName)
+    {
+        return getPath(fileName, "cix");
+    }
+
+    public String getSigPath(String fileName)
+    {
+        return getPath(fileName, "sig");
+    }
+
+    public String getTagPath(String fileName)
+    {
+        return getPath(fileName, "tag");
     }
 
     public String getCixDirectory()
@@ -38,12 +94,12 @@ public class PathHelper
 
     public String getSigDirectory()
     {
-        return getDirectory("sigs");
+        return getDirectory("sig");
     }
 
     public String getTagDirectory()
     {
-        return getDirectory("tags");
+        return getDirectory("tag");
     }
 
     public Vector<String> getCixNames()
@@ -58,12 +114,12 @@ public class PathHelper
 
     public Vector<String> getSigPaths()
     {
-        return getFilePaths("sigs");
+        return getFilePaths("sig");
     }
 
     public Vector<String> getTagPaths()
     {
-        return getFilePaths("tags");
+        return getFilePaths("tag");
     }
 
     private Vector<String> getFilePaths(String fileType)
@@ -88,14 +144,19 @@ public class PathHelper
         return files;
     }
 
+    private String getPath(String fileName, String type)
+    {
+        return getDirectory(type) + fileName + "." + type;
+    }
+
     private String getDirectory(String dir)
     {
-        return getCixToCtagsDirectory() + dir + "/";
+        return getCixToCtagsDirectory() + dir + File.separator ;
     }
 
     private String getCixToCtagsDirectory()
     {
-        return jEdit.getSettingsDirectory() + "/CixToCtags/";
+        return jEdit.getSettingsDirectory() + File.separator + "CixToCtags" + File.separator ;
     }
 
 }
