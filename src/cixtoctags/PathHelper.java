@@ -4,6 +4,7 @@ import org.gjt.sp.jedit.jEdit;
 import java.util.Vector;
 import java.io.*;
 import ctagsinterface.main.VFSHelper;
+import org.gjt.sp.jedit.Macros;
 
 /**
  *
@@ -23,6 +24,10 @@ public class PathHelper
     public String getFileName(String path)
     {
         return VFSHelper.getFileName(path);
+//        String[] pathSplit = path.split("\\"+File.separator);
+//        if(pathSplit.length>=1)
+//            return pathSplit[pathSplit.length-1];
+//        return "";
     }
 
     public String getFileNamePre(String path)
@@ -62,7 +67,9 @@ public class PathHelper
             if (!parentDir.exists())
                 parentDir.mkdirs();
             file.createNewFile();
-        } catch (IOException | SecurityException ex) {
+        } catch (IOException ex) {
+            System.out.println("Error while Creating File in Java" + ex);
+        } catch (SecurityException ex) {
             System.out.println("Error while Creating File in Java" + ex);
         }
     }

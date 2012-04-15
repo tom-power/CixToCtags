@@ -1,6 +1,5 @@
 package cixtoctags;
 
-import org.gjt.sp.jedit.View;
 import javax.swing.JProgressBar;
 
 

@@ -4,12 +4,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.BorderLayout;
 import java.util.Vector;
-import java.io.File;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.border.EmptyBorder;
 import java.awt.Dimension;
@@ -69,33 +67,38 @@ public class CixToCtags extends JPanel
         buttons.add(tag);
         bottom.add(buttons);
 
-        // TODO: not adding files
         add.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent ae)
             {
-                VFSFileChooserDialog chooser = new VFSFileChooserDialog(
-                        GUIUtilities.getParentDialog(view),
-                        jEdit.getActiveView(), System.getProperty("user.home"),
-                        VFSBrowser.OPEN_DIALOG, false, false
-                        );
-                chooser.setTitle("Select .cix file");
-                chooser.setVisible(true);
-                String cixAdd = chooser.getSelectedFiles()[0];
-                if (cixAdd == null) {
-                    Macros.message(view, "Nothing selected");
-                    return;
-                }
-                if (!ph.getFileNameExt(cixAdd).equals("cix")) {
-                    Macros.message(view, "Selected file not a .cix file");
-                    return;
-                }
-                String cixFileName = ph.getFileName(cixAdd);
-                if (cixModel.toString().lastIndexOf(cixFileName) < 0) {
-                    ph.copy(cixAdd, ph.getCixPath(ph.getFileNamePre(cixFileName)));
-                    cixModel.addElement(cixFileName);
-                }
-                progress.setProgress(0);
+                new Thread(new Runnable() {
+                    public void run() {
+                        VFSFileChooserDialog chooser = new VFSFileChooserDialog(
+                                GUIUtilities.getParentDialog(view),
+                                jEdit.getActiveView(), System.getProperty("user.home"),
+                                VFSBrowser.OPEN_DIALOG, false, false
+                                );
+                        chooser.setTitle("Select .cix file");
+                        chooser.setVisible(true);
+                        String cixAdd = chooser.getSelectedFiles()[0];
+                        if (cixAdd == null) {
+                            Macros.message(view, "Nothing selected");
+                            return;
+                        }
+                        if (!ph.getFileNameExt(cixAdd).equals("cix")) {
+                            Macros.message(view, "Selected file not a .cix file");
+                            return;
+                        }
+                        progress.setIndeterminate(true);
+                        progress.setString("Adding");
+                        String cixFileName = ph.getFileName(cixAdd);
+                        if (cixModel.toString().lastIndexOf(cixFileName) < 0) {
+                            ph.copy(cixAdd, ph.getCixPath(ph.getFileNamePre(cixFileName)));
+                            cixModel.addElement(cixFileName);
+                        }
+                        progress.setDefault();
+                    }
+                }).start();
             }
         });
 
@@ -103,19 +106,27 @@ public class CixToCtags extends JPanel
         {
             public void actionPerformed(ActionEvent ae)
             {
-                int i = cixList.getSelectedIndex();
-                if (i < 0)
-                    return;
-                try {
-                    String cixFileNamePre = ph.getFileNamePre(cixList.getSelectedValue().toString());
-                    CtagsInterfacePlugin.deleteTagsFromTagFile(view, ph.getTagPath(cixFileNamePre));
-                    //Macros.message(view, cixFileNamePre);
-                    ph.deleteFiles(cixFileNamePre);
-                    cixModel.removeElementAt(i);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                new Thread(new Runnable() {
+                    public void run() {
+                        int i = cixList.getSelectedIndex();
+                        if (i < 0)
+                            return;
+                        progress.setIndeterminate(true);
+                        progress.setString("Removing");
+                        try {
+                            String cixFileNamePre = ph.getFileNamePre(cixList.getSelectedValue().toString());
+                            CtagsInterfacePlugin.deleteTagsFromTagFile(view, ph.getTagPath(cixFileNamePre));
+                            ph.deleteFiles(cixFileNamePre);
+                            cixModel.removeElementAt(i);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        progress.setDefault();
+                    }
+                }).start();
             }
+
+
         });
 
         tag.addActionListener(new ActionListener()
@@ -125,16 +136,16 @@ public class CixToCtags extends JPanel
                 new Thread(new Runnable() {
                     public void run() {
                         progress.setIndeterminate(true);
-                        Vector<String> tagFiles = new Vector<String>();
-                        Parser cixParser = new Parser();
+                        Vector<String> tagFilePaths = new Vector<String>();
+                        Parser cixParser = new Parser(view);
                         for (String cixFile : ph.getCixNames()) {
                             progress.setString("Parsing "+cixFile);
-                            tagFiles.add(cixParser.parseCixFile(cixFile));
+                            tagFilePaths.add(cixParser.parseCixFile(cixFile));
                         }
-                        for(String tagFile:tagFiles) {
-                            if(!tagFile.isEmpty()) {
-                                progress.setString("Inserting "+tagFile);
-                                CtagsInterfacePlugin.addTagFile(view, tagFile);
+                        for(String tagFilePath:tagFilePaths) {
+                            if(!tagFilePath.isEmpty()) {
+                                progress.setString("Inserting "+ph.getFileName(tagFilePath));
+                                CtagsInterfacePlugin.addTagFile(view, tagFilePath);
                             }
                         }
                         progress.setDefault();

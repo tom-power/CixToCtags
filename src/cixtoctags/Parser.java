@@ -11,6 +11,8 @@ import java.io.*;
 import java.util.Vector;
 
 import cixtoctags.PathHelper;
+import org.gjt.sp.jedit.Macros;
+import org.gjt.sp.jedit.View;
 
 public class Parser
 {
@@ -18,9 +20,11 @@ public class Parser
     private String sigFilePath;
     private String tagFilePath;
     private PathHelper ph;
+    private View view;
 
-    public Parser()
+    public Parser(View view)
     {
+        this.view = view;
         this.ph = new PathHelper();
     }
 
@@ -31,7 +35,7 @@ public class Parser
         for (String cixFile : cixList) {
             tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFile));
             File tagFile = new File(tagFilePath);
-            sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFile));
+            Macros.message(view, sigFilePath);
             File sigFile = new File(sigFilePath);
             if (!tagFile.exists() || !sigFile.exists()) {
                 tagPaths.add(cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile));
@@ -47,10 +51,12 @@ public class Parser
             File tagFile = new File(tagFilePath);
             sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFile));
             File sigFile = new File(sigFilePath);
-            if (!tagFile.exists() || !sigFile.exists())
+            if (!tagFile.exists() || !sigFile.exists()) {
                 return cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile);
-            else
+            } else {
                 return "";
+            }
+
     }
 
     private String cixFileToTagsSigs(String cixFile, File tagFile, File sigFile)
@@ -66,7 +72,6 @@ public class Parser
             Node nRoot = nList.item(0);
             Element elRoot = (Element) nRoot;
             String lang = elRoot.getAttribute("lang");
-
             // construct tag and sig string for file from each entry
             int lineSync = 1;
             int parsed = 1;
@@ -133,22 +138,21 @@ public class Parser
                 + "doc:" + doc + "\t"
                 + "doctype:tag"
                 + "\n";
-        String sig = "// " + doc + "\n"
+        String sig = "// " + doc + "\n\r"
                         + returns + " "
                         + kind + " "
                         + name + " "
-                        + signature + "\n\n";
+                        + signature + "\n\r\n\r";
         String[] entryTagSigs = {tag, sig};
         return entryTagSigs;
     }
 
     private void writeStringToFile(File file, String str) throws IOException
     {
-        new File(file.getParent()).mkdir();
-        file.createNewFile();
+        ph.add(file);
         FileWriter fstream = new FileWriter(file, true);
         BufferedWriter out = new BufferedWriter(fstream);
-        out.write(str.replace("\\", ""));
+        out.write(str);
         out.close();
     }
 }
