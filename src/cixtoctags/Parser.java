@@ -33,30 +33,30 @@ public class Parser
         Vector<String> tagPaths = new Vector<String>();
         // cixfiles to tags/sigs
         for (String cixFile : cixList) {
-            tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFile));
-            File tagFile = new File(tagFilePath);
-            Macros.message(view, sigFilePath);
-            File sigFile = new File(sigFilePath);
-            if (!tagFile.exists() || !sigFile.exists()) {
-                tagPaths.add(cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile));
-            }
+            tagPaths.add(parseCixFile(cixFile));            
         }
         // tag file paths for ctagsinterfaceplugin to add
         return tagPaths;
     }
 
-    public String parseCixFile(String cixFile)
+    public String parseCixFile(String cixFileName)
     {
-            tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFile));
-            File tagFile = new File(tagFilePath);
-            sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFile));
-            File sigFile = new File(sigFilePath);
-            if (!tagFile.exists() || !sigFile.exists()) {
-                return cixFileToTagsSigs(ph.getCixPath(ph.getFileNamePre(cixFile)), tagFile, sigFile);
-            } else {
-                return "";
-            }
-
+        String cixFilePath = ph.getCixPath(ph.getFileNamePre(cixFileName));
+        File cixFile = new File(cixFilePath);
+        if (!cixFile.exists())
+            return "";        
+        tagFilePath = ph.getTagPath(ph.getFileNamePre(cixFileName));
+        File tagFile = new File(tagFilePath);
+        sigFilePath = ph.getSigPath(ph.getFileNamePre(cixFileName));
+        File sigFile = new File(sigFilePath);
+        if (tagFile.exists() && sigFile.exists()) {
+            if (tagFile.lastModified() < cixFile.lastModified() 
+                && sigFile.lastModified() < cixFile.lastModified()
+            // && TODO: check tagfile in db
+                ) 
+                return "";            
+        }
+        return cixFileToTagsSigs(cixFilePath, tagFile, sigFile);
     }
 
     private String cixFileToTagsSigs(String cixFile, File tagFile, File sigFile)

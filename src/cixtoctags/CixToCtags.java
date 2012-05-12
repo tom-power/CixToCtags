@@ -28,15 +28,29 @@ import cixtoctags.PathHelper;
 @SuppressWarnings("serial")
 public class CixToCtags extends JPanel
 {
-
     private View view;
     JList cixList;
     DefaultListModel cixModel;
     private PathHelper ph;
     private Progress progress;
 
+    @Override
+	/*protected void _save()
+	{
+	    Vector<String> tagPaths = new Vector<String>();
+		for (int i = 0; i < cixModel.size(); i++)
+			tagPaths.add(index.getTagPath(model.getElementAt(i));
+		CtagsInterfacePlugin.updateOrigins(, tagPaths);		
+	}
+    
+	protected void _init()
+    {
+    
+    }*/
+    
     public CixToCtags(View thisView)
     {
+        // TODO: include tagged state as per Activator
         this.view = thisView;
         this.ph = new PathHelper();
         setLayout(new BorderLayout());
@@ -66,7 +80,7 @@ public class CixToCtags extends JPanel
         JButton tag = new JButton("Tag");
         buttons.add(tag);
         bottom.add(buttons);
-
+            
         add.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent ae)
@@ -89,19 +103,20 @@ public class CixToCtags extends JPanel
                             Macros.message(view, "Selected file not a .cix file");
                             return;
                         }
-                        progress.setIndeterminate(true);
-                        progress.setString("Adding");
                         String cixFileName = ph.getFileName(cixAdd);
-                        if (cixModel.toString().lastIndexOf(cixFileName) < 0) {
+                        //if (cixModel.toString().lastIndexOf(cixFileName) < 0) {
+                            progress.setIndeterminate(true);
+                            progress.setString("Adding");
                             ph.copy(cixAdd, ph.getCixPath(ph.getFileNamePre(cixFileName)));
+                            cixModel.removeElement(cixFileName);
                             cixModel.addElement(cixFileName);
-                        }
-                        progress.setDefault();
+                            progress.setDefault();
+                        //}                        
                     }
                 }).start();
             }
         });
-
+    
         remove.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent ae)
@@ -125,10 +140,8 @@ public class CixToCtags extends JPanel
                     }
                 }).start();
             }
-
-
         });
-
+    
         tag.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent ae)
@@ -153,7 +166,5 @@ public class CixToCtags extends JPanel
                 }).start();
             }
         });
-
     }
-
 }

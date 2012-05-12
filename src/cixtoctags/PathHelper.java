@@ -68,13 +68,29 @@ public class PathHelper
                 parentDir.mkdirs();
             file.createNewFile();
         } catch (IOException ex) {
-            System.out.println("Error while Creating File in Java" + ex);
+            System.out.println("Error while Creating File: " + ex);
         } catch (SecurityException ex) {
-            System.out.println("Error while Creating File in Java" + ex);
+            System.out.println("Error while Creating File: " + ex);
         }
     }
-
+    
+    public void remove(String filePath)
+    {
+        File file = new File(filePath);
+        remove(file);
+    }
+    
+    public void remove(File file)
+    {
+        try {
+            file.delete();
+        } catch (SecurityException ex) {
+            System.out.println("Error while Deleting File: " + ex);
+        }    
+    }
+    
     public void copy(String file, String path){
+        remove(path);
         add(path);
         VFSHelper.copy(file, path);
     }
